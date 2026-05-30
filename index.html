@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SE Navigator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Light Neutral Backgrounds */
+  --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9; --border: #e2e8f0; --border-hi: #cbd5e1;
+  
+  /* Dark Text for Contrast */
+  --text: #0f172a; --muted: #64748b; --dim: #cbd5e1; /* Background dot grid */
+  
+  /* Accent Colors (Tweaked for white backgrounds) */
+  --acc: #2563eb; --green: #16a34a; --amber: #d97706; --red: #dc2626; --purple: #7c3aed; --cyan: #0d9488;
+  
+  --ph: 52px; --pw: 360px; --r: 5px;
+  --f-ui: 'Outfit', sans-serif; --f-mono: 'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--f-ui)}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(var(--dim) 1px,transparent 1px);background-size:26px 26px;pointer-events:none;z-index:0}
+
+/* ── Topbar ── */
+header{position:fixed;top:0;left:0;right:0;height:var(--ph);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 14px;z-index:200}
+.logo{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--acc);letter-spacing:1.2px;border-right:1px solid var(--border);padding-right:12px;white-space:nowrap}
+.srch{position:relative;flex:0 0 200px}
+.srch svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:2;pointer-events:none}
+#search{width:100%;padding:5px 8px 5px 28px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:var(--f-mono);font-size:11px;outline:none;transition:border-color .15s}
+#search:focus{border-color:var(--acc)}
+#search::placeholder{color:var(--muted)}
+.filters{display:flex;gap:3px;overflow-x:auto}
+.filters::-webkit-scrollbar{display:none}
+.fb{font-family:var(--f-mono);font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.4px}
+.fb:hover{border-color:var(--border-hi);color:var(--text)}
+.fb.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.spacer{flex:1}
+#s-status{font-family:var(--f-mono);font-size:10px;color:var(--muted);white-space:nowrap}
+.exp-btn{font-family:var(--f-mono);font-size:10px;padding:5px 11px;border-radius:3px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;letter-spacing:.4px}
+.exp-btn:hover{background:var(--acc);color:#fff}
+
+/* ── Layout ── */
+#graph{position:fixed;top:var(--ph);left:0;right:0;bottom:0;z-index:1}
+
+/* ── Panel ── */
+#panel{position:fixed;top:var(--ph);right:0;bottom:0;width:var(--pw);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .23s cubic-bezier(.4,0,.2,1);z-index:100}
+#panel.open{transform:none}
+.p-top{padding:14px 14px 0;border-bottom:1px solid var(--border);flex-shrink:0}
+.p-cat{font-family:var(--f-mono);font-size:9px;text-transform:uppercase;letter-spacing:.9px;margin-bottom:3px}
+.p-title{font-size:15px;font-weight:600;margin-bottom:11px;line-height:1.3}
+.close{position:absolute;top:11px;right:11px;background:none;border:none;cursor:pointer;color:var(--muted);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:14px;transition:all .15s}
+.close:hover{background:var(--surface2);color:var(--text)}
+.tabs{display:flex;padding:0 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{font-family:var(--f-mono);font-size:10px;letter-spacing:.5px;padding:7px 10px;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.p-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.pane{display:none;flex:1;overflow-y:auto;padding:14px;flex-direction:column}
+.pane.active{display:flex}
+.sl{font-family:var(--f-mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px}
+.st{font-size:12.5px;line-height:1.65;color:var(--text);margin-bottom:13px}
+.std-blk{font-family:var(--f-mono);font-size:10px;line-height:1.7;padding:8px 10px;background:var(--surface2);border-left:2px solid var(--green);color:var(--green);margin-bottom:13px}
+.tags{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.ptag,.ntag{font-family:var(--f-mono);font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;width:fit-content}
+.ptag:hover{border-color:var(--acc);color:var(--acc)}
+.ntag:hover{border-color:var(--green);color:var(--green)}
+.none-tag{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+/* Prompt pane */
+.prompt-box{font-family:var(--f-mono);font-size:10.5px;line-height:1.75;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:11px;white-space:pre-wrap;word-break:break-word;margin-bottom:9px;flex:1}
+.copy-btn{width:100%;padding:7px;font-family:var(--f-mono);font-size:10px;letter-spacing:.5px;border:1px solid var(--acc);border-radius:3px;background:transparent;color:var(--acc);cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:var(--acc);color:#fff}
+.copy-btn.ok{background:var(--green);border-color:var(--green);color:#fff}
+/* Notes pane */
+#notes-area{width:100%;flex:1;min-height:200px;resize:none;font-family:var(--f-mono);font-size:11px;line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:10px;outline:none;transition:border-color .15s}
+#notes-area:focus{border-color:var(--acc)}
+#notes-area::placeholder{color:var(--muted)}
+.save-st{font-family:var(--f-mono);font-size:9px;color:var(--muted);text-align:right;margin-top:4px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SE NAVIGATOR</div>
+  <div class="srch">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="search" type="text" placeholder="Search nodes...">
+  </div>
+  <div class="filters">
+    <button class="fb active" data-g="all">ALL</button>
+    <button class="fb" data-g="discovery">DISCOVERY</button>
+    <button class="fb" data-g="planning">PLANNING</button>
+    <button class="fb" data-g="design">DESIGN</button>
+    <button class="fb" data-g="build">BUILD</button>
+    <button class="fb" data-g="testing">TESTING</button>
+    <button class="fb" data-g="delivery">DELIVERY</button>
+  </div>
+  <div class="spacer"></div>
+  <span id="s-status"></span>
+  <button class="exp-btn" id="exp">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    EXPORT JSON
+  </button>
+</header>
+
+<div id="graph"></div>
+
+<aside id="panel">
+  <div class="p-top">
+    <div id="p-cat" class="p-cat"></div>
+    <div id="p-title" class="p-title"></div>
+    <button class="close" id="cls">✕</button>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-t="overview">OVERVIEW</button>
+    <button class="tab" data-t="prompt">PROMPT</button>
+    <button class="tab" data-t="notes">NOTES</button>
+  </nav>
+  <div class="p-body">
+    <div class="pane active" id="pane-overview">
+      <div class="sl">Purpose</div><div class="st" id="p-desc"></div>
+      <div class="sl">Example</div><div class="st" id="p-ex"></div>
+      <div class="sl">Standards</div><div class="std-blk" id="p-std"></div>
+      <div class="sl">Prerequisites</div><div class="tags" id="p-pre"></div>
+      <div class="sl">Next Steps</div><div class="tags" id="p-nxt"></div>
+    </div>
+    <div class="pane" id="pane-prompt">
+      <div class="sl">LLM / Agent Prompt — Copy & Use</div>
+      <div class="prompt-box" id="p-prompt"></div>
+      <button class="copy-btn" id="copy-btn">COPY PROMPT</button>
+    </div>
+    <div class="pane" id="pane-notes">
+      <div class="sl">Notes (auto-saved locally)</div>
+      <textarea id="notes-area" placeholder="Decisions, observations, context for this phase..."></textarea>
+      <div class="save-st" id="save-st">—</div>
+    </div>
+  </div>
+</aside>
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+const GC={
+  discovery:{bg:'#eff6ff',bd:'#bfdbfe',hi:'#3b82f6',fn:'#1e3a8a'},
+  planning: {bg:'#f5f3ff',bd:'#ddd6fe',hi:'#8b5cf6',fn:'#4c1d95'},
+  design:   {bg:'#fdf4ff',bd:'#f5d0fe',hi:'#d946ef',fn:'#701a75'},
+  build:    {bg:'#f0f9ff',bd:'#bae6fd',hi:'#0ea5e9',fn:'#0c4a6e'},
+  testing:  {bg:'#f0fdf4',bd:'#bbf7d0',hi:'#22c55e',fn:'#14532d'},
+  delivery: {bg:'#f0fdfa',bd:'#ccfbf1',hi:'#14b8a6',fn:'#134e4a'},
+};
+const GM={
+  discovery:['problem','need','goal','impact','resources','policies'],
+  planning: ['objectives','risk','metrics','gate1','requirements','gate2'],
+  design:   ['sysdesign','architecture','moddesign'],
+  build:    ['implementation'],
+  testing:  ['unittest','inttest','systest','gate3','accepttest','gate4'],
+  delivery: ['deployment','operations']
+};
+
+const D={
+problem:{label:'Problem(s)',g:'discovery',x:-360,y:-330,sh:'box',cat:'Customer · Discovery',
+  desc:'A validated gap between current and desired state. The entry point. Must be evidence-based — not assumed.',
+  ex:'68% of users abandon checkout. Session recordings confirm a 5-step form is the primary cause.',
+  std:'INCOSE SE Handbook §4.1 — Problem/Opportunity Space\nISO/IEC/IEEE 15288:2023 §6.4.1 — Stakeholder Needs Definition',
+  pre:[],nxt:['need'],
+  prompt:`PHASE: Problem Definition
+ROLE: Systems Engineer — Discovery
+
+PREREQUISITES: None (entry point)
+
+TASK:
+Investigate and validate the problem space.
+Do NOT jump to solutions.
+
+STEPS:
+1. Observe current state (data, recordings, interviews)
+2. Define desired state (what stakeholders actually want)
+3. Quantify the gap (magnitude, frequency, population affected)
+4. Validate with ≥3 independent evidence sources
+
+DELIVERABLE — Problem Statement:
+  Current state: [describe with data]
+  Desired state: [describe clearly]
+  The gap:       [quantified — e.g. "68% abandon rate"]
+  Evidence:      [source 1], [source 2], [source 3]
+
+QUALITY CHECKS:
+□ Evidence-based, not assumption-based
+□ Gap is measurable (before/after comparison possible)
+□ At least 3 stakeholders confirm the problem exists
+
+NEXT → Need(s)`},
+
+need:{label:'Need(s)',g:'discovery',x:-360,y:-220,sh:'box',cat:'Customer · Discovery',
+  desc:'What stakeholders require to resolve the problem. Needs are functional or emotional — never solutions. Derived via interviews, observation, and usage data.',
+  ex:'Users need to complete checkout in under 60 seconds without creating an account.',
+  std:'ISO/IEC/IEEE 29148:2018 §5.2 — Stakeholder Needs\nINCOSE SE Handbook §4.2 — Needs Analysis',
+  pre:['problem'],nxt:['goal'],
+  prompt:`PHASE: Needs Analysis
+ROLE: Systems Engineer — Stakeholder Liaison
+
+PREREQUISITES:
+✓ Problem Statement (validated, evidence-based)
+
+TASK:
+Elicit what stakeholders need — not solutions.
+Use Jobs-to-be-Done: "When [situation], I need [capability] so that [outcome]."
+
+STEPS:
+1. Conduct structured interviews (≥5 stakeholders)
+2. Separate needs from solutions in transcript
+3. Classify: Functional / Non-Functional / Emotional
+4. Rank by stakeholder priority
+
+DELIVERABLE — Needs Register:
+  ID    | Statement                          | Priority | Source
+  N-001 | [stakeholder] needs to [action]... | Critical | interview/observation
+
+QUALITY CHECKS:
+□ No solution language in any need statement
+□ Every need traces to the Problem Statement
+□ Needs ranked by stakeholder priority
+
+NEXT → Goal`},
+
+goal:{label:'Goal',g:'discovery',x:-360,y:-110,sh:'box',cat:'Customer · Discovery',
+  desc:'A directional statement of intent aligning needs to desired outcomes. Goals are not yet measurable — that comes at Metrics.',
+  ex:'Improve checkout experience to increase purchase conversion rate.',
+  std:'INCOSE SE Handbook §4.2\nISO/IEC 15288 §6.4.1',
+  pre:['need'],nxt:['impact','objectives'],
+  prompt:`PHASE: Goal Synthesis
+ROLE: Systems Engineer — Strategist
+
+PREREQUISITES:
+✓ Validated Needs Register
+
+TASK:
+Synthesise needs into directional goals.
+Format: "[Verb] [subject] to [achieve outcome]"
+Example: "Reduce checkout friction to increase completed purchases"
+
+STEPS:
+1. Group related needs into themes
+2. Write one goal per theme (2–5 goals typical)
+3. Confirm each goal addresses ≥1 need
+4. Check goals are non-conflicting
+
+DELIVERABLE — Goal Set:
+  G-001: [Goal statement] → addresses [N-001, N-002]
+  G-002: [Goal statement] → addresses [N-003]
+
+QUALITY CHECKS:
+□ No solution language in any goal
+□ Goals are directional, not yet measurable
+□ All high-priority needs addressed by ≥1 goal
+
+NEXT → Impact, then Objectives`},
+
+impact:{label:'Impact',g:'discovery',x:-360,y:0,sh:'box',cat:'Customer · Discovery',
+  desc:'Expected change in system or business state if goals are achieved. Grounds the project in real value, not just feature delivery.',
+  ex:'+20% completed purchases. Cart abandonment from 68% → 45%.',
+  std:'INCOSE Value Engineering\nISO/IEC 25010 — Quality in Use characteristics',
+  pre:['goal'],nxt:['objectives'],
+  prompt:`PHASE: Impact Assessment
+ROLE: Systems Engineer — Value Analyst
+
+PREREQUISITES:
+✓ Goals defined
+
+TASK:
+Define the expected impact if goals are achieved.
+This becomes the benchmark for project success.
+
+IMPACT TYPES:
+• Business:    revenue, cost, efficiency, risk reduction
+• User:        time saved, errors reduced, satisfaction
+• Technical:   performance, reliability, security
+• Strategic:   market position, compliance, capability
+
+DELIVERABLE — Impact Map:
+  Goal G-001 → Impact: [quantified change expected]
+  Measurement: [how impact will be verified post-delivery]
+  Timeframe:   [when impact becomes visible]
+
+QUALITY CHECKS:
+□ Every impact is quantified (%, time, money, count)
+□ Measurement method is defined before project starts
+□ Timeframe is realistic and agreed with stakeholders
+
+NEXT → Objectives`},
+
+resources:{label:'Resources',g:'discovery',x:360,y:-260,sh:'box',cat:'Business · Constraint',
+  desc:'Budget, people, tools, and time available. Sets the feasibility boundary before objectives are locked. Unvalidated resources make objectives fictional.',
+  ex:'2 developers, 3-month runway, $40K budget, existing AWS infrastructure.',
+  std:'ISO 15288 §6.4.3 — Organisational Enabling Infrastructure\nINCOSE §5.1 — Feasibility Analysis',
+  pre:[],nxt:['objectives'],
+  prompt:`PHASE: Resource Assessment
+ROLE: Engineering Manager / Business Analyst
+
+PREREQUISITES: None (run in parallel with Customer Discovery)
+
+TASK:
+Catalogue all available resources and constraints
+that will shape what Objectives are feasible.
+
+RESOURCE CATEGORIES:
+• Human:         [# people, roles, availability %]
+• Financial:     [total budget, burn rate, contingency %]
+• Time:          [deadline, key milestones]
+• Technical:     [existing systems, infrastructure, licences]
+• Organisational:[departments, decision authority]
+
+DELIVERABLE — Resource Register:
+  Type     | Available    | Constraint        | Notes
+  Human    | 2 devs       | 60% availability  | Shared with existing product
+  Budget   | $40K         | Fixed, no flex    | Approved by CFO
+  Time     | 12 weeks     | Hard deadline     | Contractual
+
+QUALITY CHECKS:
+□ All resources confirmed by authorised stakeholders
+□ Constraints are hard limits, not preferences
+□ Resource gaps identified and flagged before Gate 1
+
+NEXT → Objectives`},
+
+policies:{label:'Policies',g:'discovery',x:360,y:-130,sh:'box',cat:'Business · Constraint',
+  desc:'Legal, regulatory, ethical, and organisational rules that constrain the solution space. Must be identified before any design begins.',
+  ex:'GDPR compliance required. No raw card data storage (PCI-DSS). Internal API-first mandate.',
+  std:'ISO 15288 §6.4.2 — Enterprise Environment\nISO/IEC 27001 — Information Security Management',
+  pre:[],nxt:['objectives'],
+  prompt:`PHASE: Policy & Constraint Mapping
+ROLE: Compliance Analyst / Systems Engineer
+
+PREREQUISITES: None (run in parallel with Customer Discovery)
+
+TASK:
+Identify all non-negotiable constraints on the solution.
+These bound the entire design space.
+
+CONSTRAINT TYPES:
+• Legal:          applicable laws and liability obligations
+• Regulatory:     standards with compliance obligations
+• Security:       data handling, access control, encryption
+• Organisational: internal mandates, approval processes
+• Ethical:        data use, fairness, environmental
+
+DELIVERABLE — Policy Register:
+  ID    | Type         | Policy               | Impact on Design
+  P-001 | Regulatory   | PCI-DSS SAQ-A        | No raw card data on servers
+  P-002 | Legal        | GDPR Article 17      | EU-only data storage
+  P-003 | Org mandate  | API-first policy     | All features via REST API
+
+QUALITY CHECKS:
+□ Each policy has an authoritative source cited
+□ Design impact is explicitly stated per policy
+□ Legal/compliance team has reviewed the register
+
+NEXT → Objectives`},
+
+objectives:{label:'Objectives',g:'planning',x:0,y:80,sh:'box',cat:'Convergence · Planning',
+  desc:'Where customer needs and business constraints converge into specific, agreed intent. Must be SMART. Bridge between discovery and engineering.',
+  ex:'Reduce checkout steps 5→2 by end of Q3, within $40K, PCI-DSS compliant.',
+  std:'INCOSE SE Handbook §4.3 — Objective Definition\nISO 15288 §6.4.1 — Mission Analysis',
+  pre:['impact','goal','resources','policies'],nxt:['risk'],
+  prompt:`PHASE: Objective Formulation
+ROLE: Systems Engineer — Mission Analyst
+
+PREREQUISITES:
+✓ Problem Statement validated
+✓ Goals and Impact defined
+✓ Resources Register completed
+✓ Policy Register completed
+
+TASK:
+Synthesise all discovery inputs into SMART objectives.
+These become the formal project commitment.
+
+SMART FORMAT:
+• Specific:    exact outcome, no ambiguity
+• Measurable:  quantified target value
+• Achievable:  within resource constraints
+• Relevant:    traces to ≥1 Goal
+• Time-bound:  clear deadline
+
+DELIVERABLE — Objectives Statement:
+  OBJ-001: [SMART statement]
+            Traces to: [G-001]
+            Constrained by: [P-001, P-002, Budget $40K]
+            Success metric: [from Impact Map]
+
+QUALITY CHECKS:
+□ Every objective is SMART
+□ Every Goal has ≥1 Objective
+□ Every Resource/Policy constraint is reflected
+□ No conflicts between objectives
+
+NEXT → Risk Assessment`},
+
+risk:{label:'Risk Assessment',g:'planning',x:0,y:200,sh:'box',cat:'Governance · Planning',
+  desc:'Identify, analyse, and prioritise threats to objectives before design begins. Assessed by probability × impact. High risks require mitigation plans.',
+  ex:'Risk: payment gateway latency >2s (P=M, I=H, Score=6). Mitigation: SLA <200ms + exponential retry.',
+  std:'ISO 31000:2018 — Risk Management Principles\nINCOSE SE Handbook §5.7 — Risk Management Process',
+  pre:['objectives'],nxt:['metrics'],
+  prompt:`PHASE: Risk Assessment
+ROLE: Systems Engineer — Risk Manager
+
+PREREQUISITES:
+✓ Objectives (SMART, agreed)
+
+TASK:
+Identify and quantify all risks that could prevent
+objectives from being met. Before any design begins.
+
+SCORING:
+  High=3  Medium=2  Low=1
+  Score = Probability × Impact (max 9)
+  ≥6 → CRITICAL → mandatory mitigation plan
+  3–5 → MEDIUM → monitor actively
+  <3  → LOW → accept and log
+
+RISK CATEGORIES:
+• Technical:   unknowns, integration complexity
+• Resource:    availability, skill gaps, budget overrun
+• Schedule:    dependencies, external blockers
+• Compliance:  regulatory change, audit failure
+• Operational: performance, availability, security
+
+DELIVERABLE — Risk Register:
+  ID    | Risk              | P | I | Score | Mitigation        | Owner
+  R-001 | Gateway latency   | M | H |   6   | SLA + retry logic | CTO
+  R-002 | PCI audit failure | L | H |   3   | Pre-audit review  | Lead Eng
+
+QUALITY CHECKS:
+□ All objectives have associated risks assessed
+□ All score ≥6 items have documented mitigation plans
+□ Risk owners assigned for Medium+ risks
+
+NEXT → Metrics / Success Criteria`},
+
+metrics:{label:'Metrics /\nSuccess Criteria',g:'planning',x:0,y:340,sh:'box',cat:'Governance · Planning',
+  desc:'Converts objectives into measurable, testable conditions. Every requirement must trace to a metric. Without metrics, acceptance is subjective.',
+  ex:'Checkout ≤60s. Abandonment ≤45%. Uptime ≥99.9%. Zero P1 security incidents at launch.',
+  std:'ISO/IEC 25010 — Quality Model Metrics\nISO/IEC 29148:2018 §5.4\nINCOSE §4.4',
+  pre:['objectives','risk'],nxt:['gate1'],
+  prompt:`PHASE: Metrics & Success Criteria
+ROLE: Systems Engineer — Quality Analyst
+
+PREREQUISITES:
+✓ Objectives (SMART)
+✓ Risk Register (mitigations accepted)
+
+TASK:
+Convert each objective into quantified, testable
+success criteria. These will drive Acceptance Testing.
+
+METRIC FORMAT:
+  M-001 → OBJ-001
+  Metric:            [what is measured]
+  Target:            [threshold — ≤ or ≥]
+  Measurement method:[how it is measured]
+  Measured at:       [test event or milestone]
+
+METRIC CATEGORIES:
+• Functional:    does it do what it should?
+• Performance:   speed, throughput, reliability
+• Security:      compliance, vulnerability counts
+• Usability:     task time, error rate, NPS
+• Business:      conversion, retention, revenue
+
+DELIVERABLE — Metrics Traceability Matrix:
+  [Objective] → [Metric] → [Test method] → [Pass threshold]
+
+QUALITY CHECKS:
+□ Every objective has ≥1 metric
+□ Every metric has a clear measurement method
+□ All metrics agreed with stakeholders before Gate 1
+
+NEXT → Gate 1: Stakeholder Sign-off`},
+
+gate1:{label:'Gate 1\nSign-off',g:'planning',x:0,y:480,sh:'diamond',cat:'Decision Gate',
+  desc:'Formal checkpoint: validate Objectives, Risks, and Metrics before engineering begins. Reject path loops back to revise Objectives.',
+  ex:'Product owner + engineering lead sign checklist. Risk register accepted. Scope agreed in writing.',
+  std:'ISO 15288 §6.3 — Decision Gates\nINCOSE SE Handbook §3.3 — Technical Reviews and Audits',
+  pre:['metrics','risk','objectives'],nxt:['requirements'],
+  prompt:`PHASE: Gate 1 — Stakeholder Sign-off
+ROLE: Project Lead / Systems Engineer
+
+PREREQUISITES:
+✓ Objectives (SMART, agreed by all stakeholders)
+✓ Risk Register (reviewed, mitigations accepted)
+✓ Metrics / Success Criteria (measurable, agreed)
+
+GATE CHECKLIST:
+□ Problem Statement validated and signed off
+□ All Objectives are SMART and stakeholder-approved
+□ Risk Register reviewed; no unacceptable critical risks remain open
+□ Success Criteria are measurable and agreed upon
+□ Resource constraints confirmed (budget, team, timeline)
+□ Policy Register reviewed by compliance/legal
+□ Scope boundary documented — IN and OUT of scope explicit
+
+DECISION:
+PASS   → proceed to Requirements Definition
+REJECT → return to Objectives with documented objections
+
+DELIVERABLE — Signed Gate 1 Checklist:
+  Approver names and roles
+  Date of approval
+  Any conditions, caveats, or scope exceptions documented
+
+QUALITY CHECKS:
+□ All required approvers have signed
+□ No open critical risks without accepted mitigations
+□ Scope is unambiguous and version-controlled
+
+NEXT → Requirements (PASS) | Objectives (REJECT)`},
+
+requirements:{label:'Requirements',g:'planning',x:0,y:620,sh:'box',cat:'Definition · Planning',
+  desc:'Precise, verifiable statements of what the system must do (functional) and how it must perform (non-functional). Each traces to an objective.',
+  ex:'FR-01: System shall process payment in ≤2s under 1,000 concurrent users.\nNFR-01: System shall comply with PCI-DSS SAQ-A.',
+  std:'ISO/IEC/IEEE 29148:2018 — Requirements Engineering\nINCOSE SE Handbook §4.4 — Requirements Definition',
+  pre:['gate1'],nxt:['gate2'],
+  prompt:`PHASE: Requirements Definition
+ROLE: Systems Engineer — Requirements Analyst
+
+PREREQUISITES:
+✓ Gate 1 signed off
+✓ Objectives, Metrics, Risk Register (approved baseline)
+
+TASK:
+Write precise, verifiable requirements. If you cannot
+write a test for it, it is NOT a requirement.
+
+TYPES:
+• Functional (FR):   "The system SHALL [do X] when [condition]"
+• Non-Functional (NFR): performance, security, reliability, usability
+• Interface (IR):    APIs, protocols, data formats
+• Constraint (CR):   regulatory, physical, technical limits
+
+FORMAT (IEEE 29148):
+  ID:                FR-001
+  Statement:         The system SHALL process payment within ≤2s
+                     under load of 1,000 concurrent users.
+  Rationale:         Supports NFR latency target M-002
+  Traces to:         OBJ-001, M-002
+  Priority:          Must / Should / Could
+  Acceptance criterion: Load test ST-001 passes at 1,000 concurrent users
+
+INCOSE QUALITY CRITERIA:
+□ Necessary   — removes a risk or satisfies an objective
+□ Verifiable  — testable by inspection, analysis, demo, or test
+□ Unambiguous — one interpretation only
+□ Consistent  — no conflicts with other requirements
+□ Complete    — all conditions specified
+
+NEXT → Gate 2: Requirements Review`},
+
+gate2:{label:'Gate 2\nReq. Review',g:'planning',x:0,y:760,sh:'diamond',cat:'Decision Gate',
+  desc:'Confirms requirements are complete, consistent, testable, and feasible before committing to design. A missed requirement here costs 10× to fix in testing.',
+  ex:'Requirements traceability matrix reviewed. Each requirement linked to an objective and acceptance criterion.',
+  std:'INCOSE — System Requirements Review (SRR)\nISO/IEC/IEEE 15288 §6.3 — Decision Gates',
+  pre:['requirements'],nxt:['sysdesign'],
+  prompt:`PHASE: Gate 2 — Requirements Review
+ROLE: Lead Systems Engineer / Review Board
+
+PREREQUISITES:
+✓ Complete Requirements Document
+✓ Requirements Traceability Matrix (RTM)
+
+GATE CHECKLIST:
+□ Every requirement is necessary (traces to an objective)
+□ Every requirement is verifiable (has acceptance criterion)
+□ No conflicting requirements exist
+□ All interface requirements are specified
+□ Requirements cover all Policy constraints (P-xxx)
+□ Resource feasibility confirmed (buildable within scope)
+□ Stakeholders reviewed and accepted requirements
+
+REVIEW PROCESS:
+1. Requirements walkthrough (author presents each)
+2. Independent review by non-author engineer
+3. Stakeholder spot-check (3–5 critical requirements)
+4. RTM completeness check (all objectives covered)
+
+DECISION:
+PASS   → proceed to System Design
+REJECT → return to Requirements with documented defects
+
+DELIVERABLE:
+  Requirements Review Report:
+  • Open defects with resolution plan and owner
+  • Approved Requirements Baseline (version-controlled, baselined)
+
+NEXT → System Design (PASS) | Requirements (REJECT)`},
+
+sysdesign:{label:'System Design',g:'design',x:0,y:890,sh:'box',cat:'Design',
+  desc:'Defines system boundary, subsystems, and their interactions. Translates requirements into a functional model. Outputs: context diagrams, data flows, interfaces.',
+  ex:'Three services: Payment, Auth, Order. APIs defined. External gateway integration mapped.',
+  std:'INCOSE SE Handbook §4.5 — System Architecture Definition\nISO 15288 §6.4.5 — Architecture Definition',
+  pre:['gate2'],nxt:['architecture'],
+  prompt:`PHASE: System Design
+ROLE: Systems Engineer — System Architect
+
+PREREQUISITES:
+✓ Approved Requirements Baseline (post Gate 2)
+
+TASK:
+Define the system boundary, major functions, and interactions.
+This is the WHAT — not yet the HOW.
+
+DELIVERABLES:
+1. Context Diagram    — inside-system vs outside-system boundary
+2. Functional Decomp  — major system functions and sub-functions
+3. Data Flow Diagrams — inputs, transformations, outputs
+4. Interface Definitions — every system-to-system interface
+5. Operational Scenarios — key use case walkthroughs
+
+METHODS:
+• IDEF0 for functional modelling (INCOSE preferred)
+• SysML Block Definition Diagram for structure
+• UML Sequence diagrams for behavioural flows
+
+FORMAT PER SUBSYSTEM:
+  Name:                 [Payment Service]
+  Function:             [processes payment transactions]
+  Inputs:               [cart data, payment token]
+  Outputs:              [payment status, transaction ID]
+  Interfaces:           [Auth Service, Order Service, Stripe API]
+  Requirements covered: [FR-001, FR-002, NFR-001]
+
+QUALITY CHECKS:
+□ Every requirement allocated to ≥1 subsystem
+□ All interfaces defined (no undefined dependencies)
+□ System boundary explicit (in vs out of scope)
+
+NEXT → Architecture`},
+
+architecture:{label:'Architecture',g:'design',x:0,y:1010,sh:'box',cat:'Design',
+  desc:'Specifies logical and physical structure — components, technologies, deployment topology. Decisions here are expensive to reverse.',
+  ex:'Microservices on AWS ECS. PostgreSQL + Redis. REST APIs. Event-driven via SQS.',
+  std:'ISO/IEC/IEEE 42010:2011 — Architecture Description\nINCOSE SE Handbook §4.5',
+  pre:['sysdesign'],nxt:['moddesign'],
+  prompt:`PHASE: Architecture Definition
+ROLE: Solution Architect / Systems Engineer
+
+PREREQUISITES:
+✓ System Design (context, functions, interfaces defined)
+
+TASK:
+Specify the physical and logical architecture:
+technologies, deployment, and communication patterns.
+
+ARCHITECTURE VIEWS (ISO/IEC 42010):
+1. Logical:     components and their relationships
+2. Physical:    deployment topology (hardware, cloud, network)
+3. Process:     concurrency, synchronisation, runtime behaviour
+4. Development: code organisation, modules, dependencies
+
+DOCUMENT PER COMPONENT:
+  Name:          [PaymentService]
+  Technology:    [Node.js 20 + Express]
+  Deployment:    [AWS ECS Fargate, 2 tasks minimum]
+  Communication: [REST/HTTPS inbound, SQS events outbound]
+  Data:          [PostgreSQL writes, Redis cache]
+  Interfaces to: [AuthService REST, Stripe REST API]
+
+ARCHITECTURE DECISION RECORDS (ADR):
+  Title / Status / Context / Decision / Consequences
+  (Record for every significant, hard-to-reverse choice)
+
+QUALITY CHECKS:
+□ Every System Design subsystem has an architecture component
+□ All interfaces specified (protocol, format, auth)
+□ NFRs (performance, security) addressed by design
+□ ADRs documented for all key technology choices
+
+NEXT → Module Design`},
+
+moddesign:{label:'Module Design',g:'design',x:0,y:1130,sh:'box',cat:'Design',
+  desc:'Detailed component-level design — data models, algorithms, interface contracts. The blueprint a developer implements directly from.',
+  ex:'PaymentService.processPayment(cartId, token) → validates → charges Stripe → emits OrderPaid event.',
+  std:'INCOSE SE Handbook §4.6 — Detailed Design\nISO 15288 §6.4.6 — Implementation Planning',
+  pre:['architecture'],nxt:['implementation'],
+  prompt:`PHASE: Module Design
+ROLE: Senior Engineer / Systems Engineer
+
+PREREQUISITES:
+✓ Architecture Definition (components, interfaces, technologies)
+
+TASK:
+Design each module to implementation level.
+This is the blueprint developers implement directly.
+
+DELIVERABLES PER MODULE:
+
+1. Interface Contract
+   Function signatures with typed inputs/outputs
+   Pre-conditions and post-conditions
+   Error cases and return codes
+
+2. Data Model
+   Entities, attributes, types, constraints
+   Relationships (ERD or class diagram)
+
+3. Logic / Algorithm
+   Pseudocode or flowchart for complex logic
+   State machines for stateful components
+
+4. Test Case References
+   Which unit tests will verify this module
+   Edge cases and boundary conditions defined here
+
+FORMAT:
+  Module:  PaymentService
+  Method:  processPayment(cartId: string, token: string): PaymentResult
+  Pre:     cartId exists in DB, token is valid Stripe token
+  Post:    charge recorded, OrderPaid event on SQS
+  Errors:  InvalidCart(404), PaymentDeclined(402), Timeout(503)
+  Tests:   processPayment.test.ts — valid, declined, timeout, duplicate
+
+QUALITY CHECKS:
+□ Every Architecture interface is designed
+□ All FR requirements addressed in ≥1 module
+□ Error handling explicitly designed (not left to implementation)
+
+NEXT → Implementation`},
+
+implementation:{label:'Implementation',g:'build',x:0,y:1270,sh:'box',cat:'Build',
+  desc:'Coding, configuration, and integration of modules per design specs. Output traces to Module Design. Code reviews enforce design compliance.',
+  ex:'Sprints 1–4: PaymentService, AuthService, OrderService. Each PR reviewed against design spec.',
+  std:'ISO 15288 §6.4.6 — Implementation\nIEEE 730 — Software Quality Assurance',
+  pre:['moddesign'],nxt:['unittest'],
+  prompt:`PHASE: Implementation
+ROLE: Development Team Lead
+
+PREREQUISITES:
+✓ Module Design (complete, approved)
+✓ Development environment and CI pipeline configured
+
+TASK:
+Implement modules per their design specifications.
+Every line of code traces to a design decision.
+
+IMPLEMENTATION STANDARDS:
+• Code reviews check design compliance, not just code quality
+• Every PR references the requirement(s) it satisfies
+• Feature flags for incremental deployment
+• No new dependencies without architecture review
+• Unit tests written alongside code (TDD preferred)
+
+CHECKLIST PER MODULE:
+□ Implements all specified interface contracts
+□ Handles all documented error cases explicitly
+□ Logs at appropriate levels (info, warn, error)
+□ Unit tests written and passing in CI
+□ API docs and README updated
+□ Code review approved confirming design compliance
+
+REQUIREMENT TRACEABILITY:
+  FR-001: ✓ PaymentService.processPayment() v1.2
+  NFR-001: ✓ PCI-DSS config in Terraform deployment manifest
+
+QUALITY CHECKS:
+□ All modules implemented per design
+□ No unplanned scope without Change Control approval
+□ Build green in CI on every merge to main
+
+NEXT → Unit Testing`},
+
+unittest:{label:'Unit Testing',g:'testing',x:390,y:1270,sh:'box',cat:'Verification · Testing',
+  desc:'Tests individual modules in isolation. Verifies each unit behaves per Module Design. Automated, developer-owned, run on every commit.',
+  ex:'processPayment() tests: valid card, declined, timeout, duplicate. 90%+ branch coverage enforced.',
+  std:'ISO/IEC/IEEE 29119 — Software Testing\nINCOSE SE Handbook §5.6 — Verification',
+  pre:['implementation','moddesign'],nxt:['inttest'],
+  prompt:`PHASE: Unit Testing
+ROLE: Developer / Test Engineer
+
+PREREQUISITES:
+✓ Module implemented
+✓ Module Design (test cases derived from interface contracts)
+
+TASK:
+Verify each module in isolation against its design spec.
+
+COVERAGE TARGETS:
+• Statement coverage: ≥80%
+• Branch coverage:   ≥90% (all decision paths)
+• All error cases must have a test
+
+TEST STRUCTURE — AAA Pattern:
+  Arrange: set up inputs and mocks/stubs
+  Act:     call the unit under test
+  Assert:  verify output matches design specification
+
+TEST CASES PER MODULE:
+  Happy path: nominal inputs → expected output
+  Boundary:   min/max values, empty/null inputs
+  Error path: each documented error case from design
+  Edge cases: concurrent calls, timeout behaviour
+
+DELIVERABLE:
+• Test report with coverage metrics
+• All tests passing in CI
+• Failed tests with root cause documented
+
+QUALITY CHECKS:
+□ Every interface contract has ≥1 test
+□ Every error case from Module Design is tested
+□ Coverage thresholds met and enforced in CI
+□ Zero flaky tests (tests are deterministic)
+
+NEXT → Integration Testing`},
+
+inttest:{label:'Integration Testing',g:'testing',x:390,y:1145,sh:'box',cat:'Verification · Testing',
+  desc:'Tests interactions between modules. Verifies interface contracts and data flows against Architecture specification.',
+  ex:'PaymentService + OrderService + SQS: OrderPaid event triggers fulfilment within 500ms end-to-end.',
+  std:'ISO/IEC/IEEE 29119-4 — Test Techniques\nINCOSE §5.6 — Integration and Verification',
+  pre:['unittest','architecture'],nxt:['systest'],
+  prompt:`PHASE: Integration Testing
+ROLE: Test Engineer / Systems Engineer
+
+PREREQUISITES:
+✓ All unit tests passing in CI
+✓ Architecture Definition (interface specs to validate against)
+
+TASK:
+Verify modules work correctly together.
+Test the interfaces and data flows defined in Architecture.
+
+TEST STRATEGY OPTIONS:
+• Big-bang:       integrate all at once (small systems only)
+• Top-down:       start at entry points, stub dependencies
+• Bottom-up:      start at lowest-level modules
+
+PER-INTERFACE TEST FORMAT:
+  Interface: PaymentService → OrderService via SQS
+  Test:      processPayment() emits OrderPaid within 500ms
+  Data:      verify event schema matches IR-003 specification
+  Error:     failed payment must NOT emit OrderPaid event
+
+TEST ENVIRONMENT:
+• Realistic test data (never production data)
+• External deps (Stripe, email): use sandbox/mock environments
+• Database: isolated test schema, reset between test runs
+
+DELIVERABLE:
+• Integration Test Report
+• All interface contracts verified with evidence
+• Performance benchmarks recorded
+
+QUALITY CHECKS:
+□ Every Architecture interface has ≥1 integration test
+□ All data flows verified end-to-end
+□ No cross-module state pollution between tests
+
+NEXT → System Testing`},
+
+systest:{label:'System Testing',g:'testing',x:390,y:1010,sh:'box',cat:'Verification · Testing',
+  desc:'Tests the complete assembled system against Requirements and System Design. Includes functional, performance, security, and failure-mode testing.',
+  ex:'Load test: 1,000 concurrent checkouts. OWASP Top 10 pen test. Full regression suite executed.',
+  std:'ISO/IEC/IEEE 29119 — Software Testing\nISO 15288 §6.4.8 — System Verification',
+  pre:['inttest','sysdesign'],nxt:['gate3'],
+  prompt:`PHASE: System Testing
+ROLE: QA Lead / Test Engineer
+
+PREREQUISITES:
+✓ Integration tests passing
+✓ System Design (functional + NFR specs to verify against)
+
+TASK:
+Test the complete system against all requirements.
+Final internal verification before customer validation.
+
+TEST TYPES:
+1. Functional:   every FR requirement verified by test case
+2. Performance:  load, stress, endurance tests (verify NFRs)
+3. Security:     OWASP Top 10, pen test, data exposure checks
+4. Reliability:  failure injection, recovery, failover testing
+5. Regression:   full suite — confirms no regressions
+
+TRACE REQUIREMENTS TO TESTS:
+  FR-001 → ST-001: checkout ≤2s under 1,000 users ✓
+  NFR-001 → ST-010: PCI-DSS compliance scan passes ✓
+
+DEFECT CLASSIFICATION:
+  P1 Critical: blocks core function or safety/security issue → MUST FIX
+  P2 High:     significant feature broken → fix before Gate 3
+  P3 Medium:   degraded experience → fix before release
+  P4 Low:      cosmetic → track and fix later
+
+DELIVERABLE:
+• System Test Report (req. coverage matrix)
+• Defect log with priorities and resolution status
+• Performance benchmark results with NFR pass/fail
+
+QUALITY CHECKS:
+□ 100% of requirements covered by ≥1 test
+□ Zero P1/P2 defects open
+□ All NFRs verified with actual measurements
+
+NEXT → Gate 3: System Validation`},
+
+gate3:{label:'Gate 3\nSys. Validation',g:'testing',x:390,y:875,sh:'diamond',cat:'Decision Gate',
+  desc:'Confirms the system meets all requirements before customer-facing acceptance. Failures trigger targeted requirement revision.',
+  ex:'QA lead and architect review test report. No P1 or P2 defects allowed to proceed.',
+  std:'INCOSE — System Verification Review (SVR)\nISO 15288 §6.4.8 — System Verification',
+  pre:['systest'],nxt:['accepttest'],
+  prompt:`PHASE: Gate 3 — System Validation
+ROLE: QA Lead + Engineering Lead + Systems Engineer
+
+PREREQUISITES:
+✓ System Test Report complete
+✓ All P1/P2 defects resolved (or formally accepted with risk sign-off)
+
+GATE CHECKLIST:
+□ System Test Report reviewed and formally accepted
+□ 100% requirements coverage confirmed
+□ Zero P1 defects open
+□ Zero P2 defects open (or accepted with documented risk)
+□ Performance results meet all NFR thresholds
+□ Security scan accepted by security review board
+□ Regression suite at 100% pass rate
+□ Test environment matches production configuration
+
+DECISION:
+PASS   → proceed to Acceptance Testing
+FAIL   → return to Requirements (if requirement defect)
+         OR Implementation (if build defect)
+
+NOTE:
+Gate 3 failure is a systems engineering event, not just QA.
+If systemic failures are found, assess whether requirements were
+underspecified — that is a Gate 1/2 retrospective action.
+
+DELIVERABLE:
+• Gate 3 Decision Record (signed by all reviewers)
+• Open defect disposition list with owner and ETA
+
+NEXT → Acceptance Testing (PASS) | Requirements or Implementation (FAIL)`},
+
+accepttest:{label:'Acceptance Testing',g:'testing',x:390,y:740,sh:'box',cat:'Validation',
+  desc:'Validates the system solves the original problem for actual stakeholders. Test cases derived from Metrics/Success Criteria.',
+  ex:'5 representative users complete checkout UAT. All finish in <60s. Post-test NPS ≥8.',
+  std:'ISO 15288 §6.4.9 — System Validation\nINCOSE §5.7\nISO/IEC/IEEE 29119-3',
+  pre:['gate3','metrics'],nxt:['gate4'],
+  prompt:`PHASE: Acceptance Testing
+ROLE: Stakeholders + QA + Systems Engineer
+
+PREREQUISITES:
+✓ Gate 3 signed off
+✓ Metrics / Success Criteria (these ARE the acceptance criteria)
+
+KEY DISTINCTION:
+  Verification = "Did we build it right?" (internal, vs requirements)
+  Validation   = "Did we build the right thing?" (with real stakeholders)
+
+TYPES OF ACCEPTANCE TESTING:
+• UAT (User Acceptance):    real users complete real tasks
+• BAT (Business Acceptance): business metrics verified in system
+• OAT (Operational):        ops team validates runbooks + monitoring
+• Regulatory:               compliance confirmed by certifier/auditor
+
+UAT PLAN:
+  Participants:     [5 representative end users — not internal team]
+  Scenarios:        [3–5 realistic task scenarios from problem space]
+  Pass criteria:    [directly from Metrics Register M-001, M-002...]
+  Method:           [moderated sessions with recording + observation]
+
+ACCEPTANCE CRITERIA (from Metrics Register):
+  M-001: Checkout completes in ≤60s → ALL 5 participants pass
+  M-002: Cart abandonment ≤45%     → measured from pilot traffic
+  M-003: NPS ≥8                    → post-session survey
+
+DELIVERABLE:
+• UAT Report with participant results per criterion
+• Go / No-Go recommendation with supporting evidence
+
+NEXT → Gate 4: Acceptance Sign-off`},
+
+gate4:{label:'Gate 4\nAcceptance Sign-off',g:'testing',x:390,y:600,sh:'diamond',cat:'Decision Gate',
+  desc:'Final business and stakeholder approval to release. All success criteria confirmed met. Reject path may require full objective revision.',
+  ex:'Signed acceptance from product owner. Legal reviewed. Rollback plan tested.',
+  std:'INCOSE — Operational Readiness Review (ORR)\nISO 15288 §6.4.9 — System Validation',
+  pre:['accepttest'],nxt:['deployment'],
+  prompt:`PHASE: Gate 4 — Acceptance Sign-off
+ROLE: Business Owner + Product Lead + Systems Engineer
+
+PREREQUISITES:
+✓ Acceptance Test Report (all criteria met or formally accepted)
+
+GATE CHECKLIST:
+□ All Acceptance Criteria from Metrics Register met with evidence
+□ UAT completed with required participants — pass confirmed
+□ Business stakeholder sign-off obtained
+□ Legal / compliance final review passed
+□ Operations team accepted the system (OAT complete)
+□ Rollback plan documented AND tested in staging
+□ Production monitoring dashboards live and alerting configured
+□ Training materials and user documentation delivered
+□ Support processes and runbooks in place and reviewed
+
+DECISION:
+PASS   → proceed to Deployment
+REJECT → return to Objectives if fundamental misalignment found
+         (rare — this should not surprise anyone if Gates 1–3 were rigorous)
+
+DELIVERABLE:
+• Acceptance Sign-off Document (all approvers signed, dated)
+• Release Authorisation Memo
+• Deployment checklist signed and filed
+
+NEXT → Deployment (PASS) | Objectives (REJECT — fundamental misalignment)`},
+
+deployment:{label:'Deployment',g:'delivery',x:390,y:450,sh:'box',cat:'Delivery',
+  desc:'Controlled release to production. Includes rollout strategy, monitoring setup, runbooks, and rollback procedures.',
+  ex:'Canary to 5% of traffic. Monitor error rate + latency for 24h. Roll to 100% over 1 week.',
+  std:'ISO 15288 §6.4.10 — Transition\nINCOSE SE Handbook §5.8 — Deployment',
+  pre:['gate4'],nxt:['operations'],
+  prompt:`PHASE: Deployment
+ROLE: DevOps / Release Engineer
+
+PREREQUISITES:
+✓ Gate 4 signed off
+✓ Production environment validated (smoke tested)
+✓ Rollback plan tested in staging
+
+DEPLOYMENT STRATEGIES:
+• Blue/Green:    run old and new in parallel, switch traffic instantly
+• Canary:        route small % (5–10%) to new version first
+• Rolling:       replace instances progressively across fleet
+• Feature flag:  deploy code to all, enable incrementally per segment
+
+DEPLOYMENT RUNBOOK (mandatory):
+  1. Pre-deploy checklist (config verified, backups confirmed)
+  2. Deployment execution steps (exact commands or pipeline trigger)
+  3. Smoke tests post-deploy (3–5 critical path tests)
+  4. Monitoring thresholds to watch (error rate, p99 latency, CPU)
+  5. Rollback trigger criteria (e.g. error rate >1% → immediate rollback)
+  6. Rollback procedure (step-by-step, previously tested)
+
+MONITORING SETUP (before deployment executes):
+• Dashboards live with real-time metrics
+• Alerts configured (error rate, latency SLOs, availability)
+• On-call rotation active and confirmed
+
+DELIVERABLE:
+• Deployment completion confirmation (time + build ref)
+• Post-deploy smoke test results
+• Monitoring dashboards live with first 24h baseline
+
+QUALITY CHECKS:
+□ Rollback previously tested in staging
+□ Smoke tests pass in production environment
+□ Key metrics within expected range for first 24h
+
+NEXT → Operations & Monitoring`},
+
+operations:{label:'Operations &\nMonitoring',g:'delivery',x:390,y:290,sh:'box',cat:'Delivery · Sustain',
+  desc:'Ongoing observation of the live system. Operational data is the primary source of new Problems — closing the loop back to Discovery.',
+  ex:'Dashboards: completion rate, p99 latency, error rate. Monthly review feeds next iteration.',
+  std:'ISO 15288 §6.4.11 — Operations\nINCOSE §5.9 — Operations and Maintenance\nISO/IEC 20000-1',
+  pre:['deployment'],nxt:['problem'],
+  prompt:`PHASE: Operations & Monitoring
+ROLE: Site Reliability Engineer / Product Manager
+
+PREREQUISITES:
+✓ System deployed and live
+✓ Monitoring dashboards active with baseline established
+
+OPERATIONAL RESPONSIBILITIES:
+• Availability:  maintain agreed SLA (e.g. ≥99.9% uptime)
+• Incident mgmt: detect → triage → resolve → postmortem
+• Performance:   monitor trends, prevent degradation before it impacts users
+• Security:      ongoing vulnerability scanning and patching cadence
+• Capacity:      forecast growth, plan ahead of limits
+
+METRICS TO MONITOR (from Metrics Register):
+  Business:   conversion rate, abandonment rate, revenue
+  Technical:  p50/p95/p99 latency, error rate, throughput
+  Operations: MTTR, MTBF, deployment frequency, change failure rate
+
+FEEDBACK LOOP — Input to Next Discovery Cycle:
+Monthly operational review should answer:
+  → What new problems has live data revealed?
+  → What user behaviour was unexpected?
+  → What performance trends need proactive attention?
+  → What assumptions in the original Objectives were wrong?
+
+This feeds directly back to Problem(s) — starting the next iteration.
+This is not failure; this is the system working as designed.
+
+DELIVERABLE:
+• Monthly Operations Review (metrics + observations + recommendations)
+• Incident postmortems with action items
+• Backlog of new problems discovered from operational data
+
+NEXT → Problem(s) [next iteration — the loop continues]`},
+};
+
+// ── Build vis nodes ──────────────────────────────────────────────────────────
+const IDs = Object.keys(D);
+
+function mkNodes(){
+  return IDs.map(id=>{
+    const d=D[id],c=GC[d.g];
+    return{id,label:d.label,x:d.x,y:d.y,fixed:true,shape:d.sh||'box',
+      color:{background:c.bg,border:c.bd,highlight:{background:c.bg,border:c.hi},hover:{background:c.bg,border:c.hi}},
+      font:{color:c.fn,size:11,face:'JetBrains Mono',multi:false},
+      borderWidth:1,borderWidthSelected:2,margin:10,
+      widthConstraint:{minimum:d.sh==='diamond'?80:110,maximum:d.sh==='diamond'?100:140}};
+  });
+}
+
+function mkEdges(){
+  const es=[];
+  const S={arrows:{to:{enabled:true,scaleFactor:0.5}},smooth:{type:'curvedCW',roundness:0.05},color:{color:'#94a3b8',highlight:'#2563eb',hover:'#2563eb'}};
+  const R={...S,dashes:true,color:{color:'#f87171',highlight:'#dc2626',hover:'#dc2626'},font:{size:8,color:'#991b1b',face:'JetBrains Mono',align:'top'}};
+  const B={...S,dashes:true,color:{color:'#cbd5e1',highlight:'#2563eb',hover:'#2563eb'},font:{size:8,color:'#1e40af',face:'JetBrains Mono',align:'middle'}};
+  const A={...S,dashes:true,color:{color:'#fbbf24',highlight:'#d97706',hover:'#d97706'},font:{size:8,color:'#92400e',face:'JetBrains Mono',align:'middle'}};
+
+  const flow=[['problem','need'],['need','goal'],['goal','impact'],
+    ['impact','objectives'],['goal','objectives'],
+    ['resources','objectives'],['policies','objectives'],
+    ['objectives','risk'],['risk','metrics'],['metrics','gate1'],
+    ['gate1','requirements'],['requirements','gate2'],
+    ['gate2','sysdesign'],['sysdesign','architecture'],['architecture','moddesign'],
+    ['moddesign','implementation'],['implementation','unittest'],
+    ['unittest','inttest'],['inttest','systest'],['systest','gate3'],
+    ['gate3','accepttest'],['accepttest','gate4'],
+    ['gate4','deployment'],['deployment','operations']];
+  flow.forEach(([f,t])=>es.push({from:f,to:t,...S}));
+  es.push({from:'gate1',to:'objectives',label:'reject',...R});
+  es.push({from:'gate2',to:'requirements',label:'reject',...R});
+  es.push({from:'gate3',to:'requirements',label:'fail',...R});
+  es.push({from:'gate4',to:'objectives',label:'reject',...R});
+  es.push({from:'requirements',to:'accepttest',label:'validates',...B});
+  es.push({from:'sysdesign',to:'systest',label:'validates',...B});
+  es.push({from:'architecture',to:'inttest',label:'validates',...B});
+  es.push({from:'moddesign',to:'unittest',label:'validates',...B});
+  es.push({from:'operations',to:'problem',label:'new problems',...A});
+  return es;
+}
+
+const network = new vis.Network(
+  document.getElementById('graph'),
+  {nodes:new vis.DataSet(mkNodes()),edges:new vis.DataSet(mkEdges())},
+  {physics:false,
+   nodes:{shapeProperties:{borderRadius:4}},
+   edges:{selectionWidth:1.5},
+   interaction:{hover:true,zoomView:true,dragView:true,tooltipDelay:150},
+   layout:{randomSeed:1}}
+);
+network.fit({animation:{duration:900,easingFunction:'easeInOutQuad'}});
+
+// ── Panel logic ──────────────────────────────────────────────────────────────
+const panel=document.getElementById('panel');
+let cur=null,notesT=null;
+
+function openPanel(id){
+  const d=D[id]; if(!d)return;
+  cur=id;
+  const c=GC[d.g];
+  document.getElementById('p-cat').textContent=d.cat;
+  document.getElementById('p-cat').style.color=c.hi;
+  document.getElementById('p-title').textContent=d.label.replace('\n',' ');
+  document.getElementById('p-desc').textContent=d.desc;
+  document.getElementById('p-ex').innerHTML=d.ex.replace(/\n/g,'<br>');
+  document.getElementById('p-std').innerHTML=d.std.replace(/\n/g,'<br>');
+  const preEl=document.getElementById('p-pre');
+  preEl.innerHTML=d.pre.length?d.pre.map(p=>`<span class="ptag" data-n="${p}">← ${D[p].label.replace('\n',' ')}</span>`).join(''):`<span class="none-tag">Entry point — no prerequisites</span>`;
+  const nxtEl=document.getElementById('p-nxt');
+  nxtEl.innerHTML=d.nxt.length?d.nxt.map(n=>`<span class="ntag" data-n="${n}">→ ${D[n].label.replace('\n',' ')}</span>`).join(''):`<span class="none-tag">Terminal node</span>`;
+  document.getElementById('p-prompt').textContent=d.prompt;
+  const saved=localStorage.getItem('sen_'+id)||'';
+  document.getElementById('notes-area').value=saved;
+  document.getElementById('save-st').textContent=saved?'Saved ✓':'—';
+  panel.classList.add('open');
+  setTab('overview');
+}
+
+function closePanel(){panel.classList.remove('open');cur=null;}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.t));
+function setTab(n){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.t===n));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+n));
+}
+
+document.getElementById('p-pre').addEventListener('click',e=>{const n=e.target.dataset.n;if(n){openPanel(n);network.selectNodes([n]);}});
+document.getElementById('p-nxt').addEventListener('click',e=>{const n=e.target.dataset.n;if(n){openPanel(n);network.selectNodes([n]);}});
+
+document.getElementById('copy-btn').onclick=function(){
+  navigator.clipboard.writeText(D[cur]?.prompt||'').then(()=>{
+    this.textContent='COPIED ✓';this.classList.add('ok');
+    setTimeout(()=>{this.textContent='COPY PROMPT';this.classList.remove('ok');},1800);
+  });
+};
+
+document.getElementById('notes-area').addEventListener('input',function(){
+  document.getElementById('save-st').textContent='Saving...';
+  clearTimeout(notesT);
+  notesT=setTimeout(()=>{
+    if(cur){localStorage.setItem('sen_'+cur,this.value);document.getElementById('save-st').textContent='Saved ✓';}
+  },500);
+});
+
+document.getElementById('cls').onclick=closePanel;
+network.on('click',p=>{if(p.nodes.length)openPanel(p.nodes[0]);});
+network.on('hoverNode',()=>document.getElementById('graph').style.cursor='pointer');
+network.on('blurNode',()=>document.getElementById('graph').style.cursor='default');
+
+// ── Search ───────────────────────────────────────────────────────────────────
+function resetVis(){
+  network.body.data.nodes.update(IDs.map(id=>{const d=D[id],c=GC[d.g];return{id,color:{background:c.bg,border:c.bd,highlight:{background:c.bg,border:c.hi},hover:{background:c.bg,border:c.hi}},font:{color:c.fn,size:11,face:'JetBrains Mono'}};}));
+}
+document.getElementById('search').addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  const ss=document.getElementById('s-status');
+  if(!q){resetVis();ss.textContent='';return;}
+  const hits=IDs.filter(id=>{const d=D[id];return d.label.toLowerCase().includes(q)||d.desc.toLowerCase().includes(q)||d.cat.toLowerCase().includes(q)||d.ex.toLowerCase().includes(q);});
+  network.body.data.nodes.update(IDs.map(id=>{
+    const d=D[id],c=GC[d.g],on=hits.includes(id);
+  return{id,color:{background:on?c.bg:'#f8fafc',border:on?c.hi:'#e2e8f0',highlight:{background:c.bg,border:c.hi}},font:{color:on?c.fn:'#cbd5e1',size:11,face:'JetBrains Mono'}};
+  }));
+  ss.textContent=hits.length?`${hits.length} result${hits.length>1?'s':''}`:' no match';
+  if(hits.length===1)network.focus(hits[0],{scale:1.3,animation:{duration:400,easingFunction:'easeInOutQuad'}});
+  else if(hits.length>1)network.fit({nodes:hits,animation:{duration:400,easingFunction:'easeInOutQuad'}});
+});
+
+// ── Filter ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.fb').forEach(btn=>btn.onclick=function(){
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  this.classList.add('active');
+  document.getElementById('search').value='';
+  document.getElementById('s-status').textContent='';
+  const g=this.dataset.g;
+  if(g==='all'){resetVis();network.fit({animation:{duration:500,easingFunction:'easeInOutQuad'}});return;}
+  const active=GM[g]||[];
+  network.body.data.nodes.update(IDs.map(id=>{
+    const d=D[id],c=GC[d.g],on=active.includes(id);
+  return{id,color:{background:on?c.bg:'#f8fafc',border:on?c.hi:'#e2e8f0',highlight:{background:c.bg,border:c.hi}},font:{color:on?c.fn:'#cbd5e1',size:11,face:'JetBrains Mono'}};
+  }));
+  network.fit({nodes:active,animation:{duration:500,easingFunction:'easeInOutQuad'}});
+});
+
+// ── Export ───────────────────────────────────────────────────────────────────
+document.getElementById('exp').onclick=()=>{
+  const out={framework:'SE Navigator',version:'2.0',exported:new Date().toISOString(),
+    nodes:IDs.map(id=>{const d=D[id];return{id,label:d.label.replace('\n',' '),category:d.cat,group:d.g,description:d.desc,example:d.ex,standards:d.std,prerequisites:d.pre,nextSteps:d.nxt,prompt:d.prompt,notes:localStorage.getItem('sen_'+id)||''};})};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));
+  a.download='se-framework-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+};
+</script>
+</body>
+</html>
