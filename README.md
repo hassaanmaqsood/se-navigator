@@ -17,8 +17,5 @@
 
 ## 🚀 Quick Start
 
-SE Navigator requires zero build steps, bundlers, or package managers. 
+SE Navigator requires zero build steps, bundlers, or package managers. Open the following link in browser [https://hassaanmaqsood.github.io/se-navigator](https://hassaanmaqsood.github.io/se-navigator)
 
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/hassaanmaqsood/se-navigator.git](https://github.com/hassaanmaqsood/se-navigator.git)
